@@ -1,14 +1,20 @@
 import os
+import redis
+
 from user.model import User
 from datetime import datetime, timedelta
 from functools import wraps
-from flask import request, jsonify
+from flask import request, jsonify, json
 from email.message import EmailMessage
 import smtplib
 import jwt
 from dotenv import load_dotenv
 load_dotenv()
 
+r = redis.Redis(
+    host='localhost',
+    port=6379
+)
 
 token_dict = {}
 
@@ -26,7 +32,6 @@ def token_required(f):
             current_user = User.objects.filter(email=data['Email']).first()
             print(current_user)
             user = {'user': current_user}
-            print(user)
         except:
             return jsonify(message='Token is invalid')
 
@@ -75,5 +80,11 @@ def reset_password_link(email, token, name):
     server.starttls()
     server.login(email_address, email_password)
     server.send_message(msg)
+
+
+def get_cache_value(key, value, expire_time):
+    convert_to_json = json.dumps(value)
+    r.set(key, convert_to_json)
+    r.expire(key, expire_time)
 
 

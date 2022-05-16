@@ -1,14 +1,18 @@
 import os
 import jwt
+from flask_restful_swagger import swagger
 from flask import request, json
 from flask_restful import Resource
 from utility.util import get_token, account_activation_link, reset_password_link
 from .model import User
 from dotenv import load_dotenv
+from tasks import send_mail
 load_dotenv()
 
 
 class UserLogin(Resource):
+    @swagger.model
+    @swagger.operation(login='LogIn User and generate token')
     def get(self):
         """
         API used to get User Registered
@@ -50,11 +54,13 @@ class Registration(Resource):
                 return {"message": "Email Already Exists"}, 409
         details.save()
         token = get_token(details.email)
-        account_activation_link(details.email, token, details.name)
+        send_mail.delay(details.email, token, details.name)
         return {"message": "User Added Check your registered mail id to activate account"}, 201
 
 
 class ActivateEmail(Resource):
+    @swagger.model
+    @swagger.operation(activate='Activates User')
     def get(self):
         """
         This API Activates the User Account after verifying the User by Token Header
@@ -73,6 +79,8 @@ class ActivateEmail(Resource):
 
 
 class ForgotPassword(Resource):
+    @swagger.model
+    @swagger.operation(reset='Send reset password link to user email')
     def get(self):
         """
         This API is used to send reset_password_link to the User Account Email
@@ -90,6 +98,8 @@ class ForgotPassword(Resource):
 
 
 class ResetPassword(Resource):
+    @swagger.model
+    @swagger.operation(reset='Reset Password')
     def patch(self):
         """
         This API reset the password after token is generated and reset link is send after using Forget Password API
@@ -110,6 +120,19 @@ class ResetPassword(Resource):
             return {"message": "Password Changed Successfully"}, 204
         else:
             return{"message": "User Already Active"}, 409
+
+
+class GetAllUsers(Resource):
+    def get(self):
+        users = User.objects.all()
+        if not users:
+            return {'error': 'Users Detail Not Found'}, 404
+        else:
+            list1 = []
+            for user in users:
+                list1.append(user.to_json())
+            return {"message": list1}, 200
+
 
 
 

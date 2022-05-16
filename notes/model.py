@@ -1,6 +1,7 @@
 import mongoengine as d
 import datetime
 from label.model import Label
+from user.model import User
 
 
 class Notes(d.Document):
@@ -10,16 +11,12 @@ class Notes(d.Document):
     topic = d.StringField(max_length=100, required=True)
     desc = d.StringField(max_length=1000, required=True)
     is_trash = d.BooleanField(default=False)
-    label_id = d.ListField(d.ReferenceField(Label, reverse_delete_rule=d.PULL))
+    label_id = d.ListField(d.ReferenceField(Label, reverse_delete_rule=d.PULL), default=None)
+    collaborator = d.ListField(d.ReferenceField(User, reverse_delete_rule=d.PULL), default=None)
     is_pinned = d.BooleanField(default=False)
     date_created = d.DateTimeField(default=datetime.datetime.now())
 
     def to_json(self):
-        # std = dict()
-        # std['note_id'] = self.note_id
-        # std['log_id'] = self.log_id
-        # std['label_id'] = self.label_id
-        # return std
 
         return {"LogId": self.log_id,
                 "Title": self.title,
@@ -28,5 +25,6 @@ class Notes(d.Document):
                 "Is_Trash": self.is_trash,
                 "Is_Pinned": self.is_pinned,
                 "Label_Id": self.label_id,
+                "Collaborator": self.collaborator,
                 "DateCreated": str(self.date_created)}
 
